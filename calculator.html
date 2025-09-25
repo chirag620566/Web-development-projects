@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Simple Calculator</title>
+  <style>
+    :root{
+      --bg:#0f1724;
+      --panel:#0b1220;
+      --accent:#7c3aed;
+      --btn:#1f2937;
+      --btn-hover:#374151;
+      --text:#e6eef8;
+      --muted:#9aa6b2;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
+      background:linear-gradient(180deg, #071025 0%, #0b1220 100%);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      color:var(--text);
+    }
+    .calculator{
+      width:350px;
+      max-width:100%;
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:15px;
+      padding:18px;
+      box-shadow:0 10px 30px rgba(2,6,23,0.7), inset 0 1px 0 rgba(255,255,255,0.02);
+      border:1px solid rgba(255,255,255,0.03);
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom:10px;
+    }
+    .logo{
+      width:111px;
+      height:40px;
+      border-radius: 25px;
+      background:linear-gradient(135deg,var(--accent),#09b07b);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:700;color:#fff;
+      font-size:16px;
+      box-shadow:0 6px 18px rgba(124,58,237,0.14);
+    }
+    h1{font-size:14px;margin:0}
+    p.small{margin:0;color:var(--muted);font-size:12px}
+
+    .screen{
+      width:100%;
+      background:transparent;
+      min-height:78px;
+      display:flex;
+      flex-direction:column;
+      align-items:flex-end;
+      justify-content:center;
+      padding:14px 12px;
+      border-radius:10px;
+      margin-bottom:14px;
+      border:1px solid rgba(255,255,255,0.03);
+    }
+   
+    .keys{
+        display:grid;
+        grid-template-columns:repeat(4,1fr);
+        gap:10px}
+
+    button.key{
+        border:0;
+        padding:14px;
+        border-radius:10px;
+        background:var(--btn);
+        color:var(--text);
+        font-size:18px;
+        cursor:pointer;
+        box-shadow:0 6px 12px rgba(2,6,23,0.6);
+        transition:transform .06s ease, background-color .12s ease;
+    }
+    button.key:active{
+        transform:translateY(1px) scale(.998)}
+    button.key:hover{
+        background:var(--btn-hover)}
+
+    button.operator{
+        background:linear-gradient(180deg,var(--accent),#5b21b6);
+        box-shadow:0 8px 18px rgba(18, 115, 194, 0.18);}
+    button.double{
+        grid-column:span 2}
+    button.wide{
+        grid-column:span 2;
+        padding-left:28px;
+        padding-right:28px}
+    .muted{
+        background:transparent;
+        color:var(--muted);
+        border:1px solid rgba(202, 205, 27, 0.03)}
+
+  </style>
+</head>
+<body>
+  <div class="calculator" role="application" aria-label="Calculator">
+    <div class="brand">
+      <div class="logo">Calculator</div>
+    </div>
+
+    <div class="screen" id="screen" aria-live="polite">
+      <div class="history" id="history">&nbsp;</div>
+      <div class="display" id="display">0</div>
+    </div>
+
+    <div class="keys" role="group" aria-label="Calculator buttons">
+      <button class="key muted" data-action="clear">C</button>
+      <button class="key muted" data-action="sign">±</button>
+      <button class="key muted" data-action="percent">%</button>
+      <button class="key operator" data-action="operator" data-value="/">÷</button>
+
+      <button class="key" data-action="digit">7</button>
+      <button class="key" data-action="digit">8</button>
+      <button class="key" data-action="digit">9</button>
+      <button class="key operator" data-action="operator" data-value="*">×</button>
+
+      <button class="key" data-action="digit">4</button>
+      <button class="key" data-action="digit">5</button>
+      <button class="key" data-action="digit">6</button>
+      <button class="key operator" data-action="operator" data-value="-">−</button>
+
+      <button class="key" data-action="digit">1</button>
+      <button class="key" data-action="digit">2</button>
+      <button class="key" data-action="digit">3</button>
+      <button class="key operator" data-action="operator" data-value="+">+</button>
+
+      <button class="key double" data-action="digit">0</button>
+      <button class="key" data-action="dot">.</button>
+      <button class="key operator" data-action="equals">=</button>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      const displayEl = document.getElementById('display');
+      const historyEl = document.getElementById('history');
+      let state = { current: '0', previous: null, operator: null, overwrite: false };
+
+      function updateScreen(){
+        displayEl.textContent = state.current;
+        historyEl.textContent = state.previous ? `${state.previous} ${state.operator || ''}` : '';
+      }
+
+      function inputDigit(d){
+        if(state.overwrite || state.current === '0'){
+          state.current = d;
+          state.overwrite = false;
+        } else {
+          state.current = state.current + d;
+        }
+      }
+
+      function inputDot(){
+        if(state.overwrite){ state.current = '0.'; state.overwrite=false; return }
+        if(!state.current.includes('.')) state.current += '.';
+      }
+
+      function clearAll(){ state = { current: '0', previous: null, operator: null, overwrite:false }; }
+
+      function toggleSign(){
+        if(state.current === '0') return;
+        state.current = state.current.startsWith('-') ? state.current.slice(1) : '-' + state.current;
+      }
+
+      function percent(){
+        const num = parseFloat(state.current || '0');
+        state.current = String(num / 100);
+      }
+
+      function handleOperator(op){
+        const curr = parseFloat(state.current);
+        if(state.previous == null){
+          state.previous = curr;
+        } else if(state.operator){
+          state.previous = compute(state.previous, state.operator, curr);
+        }
+        state.operator = op;
+        state.overwrite = true;
+        state.current = String(state.previous);
+      }
+
+      function compute(a, op, b){
+        a = Number(a); b = Number(b);
+        if(op === '+') return a + b;
+        if(op === '-') return a - b;
+        if(op === '*') return a * b;
+        if(op === '/') return b === 0 ? 'Error' : a / b;
+        return b;
+      }
+
+      function equals(){
+        if(state.operator == null || state.previous == null) return;
+        const result = compute(state.previous, state.operator, parseFloat(state.current));
+        state.current = String(result);
+        state.previous = null;
+        state.operator = null;
+        state.overwrite = true;
+      }
+
+      document.querySelectorAll('.key').forEach(btn => {
+        btn.addEventListener('click', ()=>{
+          const action = btn.getAttribute('data-action');
+          const val = btn.getAttribute('data-value') || btn.textContent.trim();
+
+          if(action === 'digit') inputDigit(val);
+          else if(action === 'dot') inputDot();
+          else if(action === 'clear') clearAll();
+          else if(action === 'sign') toggleSign();
+          else if(action === 'percent') percent();
+          else if(action === 'operator') handleOperator(btn.getAttribute('data-value'));
+          else if(action === 'equals') equals();
+
+          updateScreen();
+        });
+      });
+
+      // keyboard support
+      window.addEventListener('keydown', (e)=>{
+        if(e.key >= '0' && e.key <= '9') inputDigit(e.key);
+        else if(e.key === '.') inputDot();
+        else if(e.key === 'Enter' || e.key === '=') { e.preventDefault(); equals(); }
+        else if(e.key === 'Backspace') {
+          state.current = state.current.length > 1 ? state.current.slice(0,-1) : '0';
+        }
+        else if(['+','-','*','/'].includes(e.key)) handleOperator(e.key);
+        else if(e.key === '%') percent();
+        else if(e.key === 'c' || e.key === 'C') clearAll();
+        updateScreen();
+      });
+
+      updateScreen();
+    })();
+  </script>
+</body>
+</html>
